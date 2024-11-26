@@ -11,13 +11,13 @@ public:
     // ~Chess();
 
     void Test() {
-        string FilePath = "chess.txt";
+        string FilePath = "../chess.txt";
         // LoadGameFromFile(FilePath);
         // ShowGame(ChessArr);
         // cout << "\nNew Game Init\n";
         // InitNewGame();
         // ShowGame(ChessArr);
-        FilePath = "chess.txt";
+        // FilePath = "chess.txt";
         // SaveGameToFile(FilePath);
         LoadGameFromFile(FilePath);
         ShowGame(ChessArr);
