@@ -1,7 +1,20 @@
-          Nyx-Chess
- A project by: THE CULT OF THE LINUX
- Authors: IsmailHamza & AwaisTahir
+  
+  
+                      #        TM
+       $    $  $     $ #     #
+       $$   $   $   $   #   #
+       $ $  $    $ $     # #
+       $  $ $     $       #
+       $   $$     $      # #
+       $    $     $     #   #
+  
+  
+        Nyx-Chess
+A project by: THE CULT OF THE LINUX
+Authors: IsmailHamza & AwaisTahir
 
- Works best in zsh Terminal
  
- All rights reserved
+- Run/Test in 9x36 zsh Terminal
+ 
+All rights reserved
+

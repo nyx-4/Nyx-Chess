@@ -11,7 +11,7 @@
 //
 //          Nyx-Chess
 // A project by: THE CULT OF THE LINUX
-// Authors: IsmailHamza & AwaisTahir
+// Authors: IsmailHamza
 //
 // 
 // - Run/Test in 9x36 zsh Terminal
@@ -24,118 +24,29 @@
 #include<fstream>
 #include<ctime>
 using namespace std;
+#include "NyxChess.h"
 
-// Global variables here
-char CHESS_ARR[8][9];    // The ninth index to store \0
-short HIST[4];        // Every move is stored in a 16-bit short. See mvShort_HR
-bool SHOW_BOARD_CORD;   // A boolean which when True will show Board co-ordinates
-long int TIME_INCREMENT;   // The Time to add after every move
-long int TIME_TOTAL;   // The Total Time alloted to the game
-long int TIME_GAME_STARTED;    // The time the game started
-int MOVES_MADE_WHITE = 0;
-int MOVES_MADE_BLACK = 0;
-bool SHOW_BOARD_MV; // A boolean which when True shows last move in distint colour
-bool SHOW_BOARD_PIECES; // A boolean which when False don't show board pieces aka Blind Fold Chess
-short UNICODE_PIECES_PRESET;    // Stores which pre-defined Preset to use, 0 for custom preset; See PC_WT_* and PC_BL_*    
-bool SHOW_MV_LST_UNICODE;   // A boolean which when True use Unicode pieces in Last 4 Move list
-
-// The Rules for GAME_ARR
-// (p, pawn); (r, rook); (n, knight); (b, bishop); (q, queen); (k, king); (. for empty square);
-// Capital for Black and small for White.
-
-
-// Basic Escape sequences
-string RESET = "\033[0m";
-
-string FG_BLACK = "\033[30m";
-string FG_RED = "\033[31m";
-string FG_GREEN = "\033[32m";
-string FG_YELLOW = "\033[33m";
-string FG_BLUE = "\033[34m";
-string FG_MAGENTA = "\033[35m";
-string FG_CYAN = "\033[36m";
-string FG_WHITE = "\033[37m";
-string FG_DEFAULT = "\033[39m";
-
-string BG_BLACK = "\033[40m";
-string BG_RED = "\033[41m";
-string BG_GREEN = "\033[42m";
-string BG_YELLOW = "\033[43m";
-string BG_BLUE = "\033[44m";
-string BG_MAGENTA = "\033[45m";
-string BG_CYAN = "\033[46m";
-string BG_WHITE = "\033[47m";
-string BG_DEFAULT = "\033[49m";
-
-string BRIGHT = "\033[1m";
-string BOLD = "\033[1m";
-string DIM = "\033[2m";
-string ITALIC = "\033[3m";
-string UNDERLINE = "\033[4m";
-string BLINK = "\033[5m";
-string REVERSE = "\033[7m";
-string HIDDEN = "\033[8m";
-string STRIKETHROUGH = "\033[9m";
-
-
-// The colours of Chess Squares, store as ";R;G;B" or ";ID" or "\033[3.m"
-string SQ_BG_MV_PRE;
-string SQ_BG_MV_NXT;
-string SQ_BG_WHITE;
-string SQ_BG_BLACK;
-string SQ_BG_CUR;
-string SQ_FG_MV_PRE;
-string SQ_FG_MV_NXT;
-string SQ_FG_WHITE;
-string SQ_FG_BLACK;
-string SQ_FG_CUR;
-
-// Variables to store Pieces
-string PC_WT_PAWN;
-string PC_WT_ROOK;
-string PC_WT_KNIGHT;
-string PC_WT_BISHOP;
-string PC_WT_QUEEN;
-string PC_WT_KING;
-string PC_BL_PAWN;
-string PC_BL_ROOK;
-string PC_BL_KNIGHT;
-string PC_BL_BISHOP;
-string PC_BL_QUEEN;
-string PC_BL_KING;
-string PC_EMPTY;
-
-// The navigation Keys, use WT* for White and BL* for Blacks
-char WT_UP;
-char WT_DN;
-char WT_RT;
-char WT_LF;
-char WT_SELECT;
-char BL_UP;
-char BL_DN;
-char BL_RT;
-char BL_LF;
-char BL_SELECT;
 
 // A place for local functions
 
 void _Menu() { // A dummy Menu to test variables, final values should be assigned in Menu()
     SQ_BG_BLACK = BG_BLACK;
     SQ_BG_WHITE = BG_WHITE;
-    PC_WT_PAWN = "P";
-    PC_WT_ROOK = "P";
-    PC_WT_KNIGHT = "P";
-    PC_WT_BISHOP = "P";
-    PC_WT_QUEEN = "P";
-    PC_WT_KING = "P";
+    PC_WT_PAWN = "p";
+    PC_WT_ROOK = "r";
+    PC_WT_KNIGHT = "n";
+    PC_WT_BISHOP = "b";
+    PC_WT_QUEEN = "q";
+    PC_WT_KING = "k";
     PC_BL_PAWN = "P";
-    PC_BL_ROOK = "P";
-    PC_BL_KNIGHT = "P";
-    PC_BL_BISHOP = "P";
-    PC_BL_QUEEN = "P";
-    PC_BL_KING = "P";
+    PC_BL_ROOK = "R";
+    PC_BL_KNIGHT = "N";
+    PC_BL_BISHOP = "B";
+    PC_BL_QUEEN = "Q";
+    PC_BL_KING = "K";
     PC_EMPTY = " ";
 }
+
 
 bool _isValidChInFile(char ch) {
     switch (ch) {
@@ -182,6 +93,13 @@ void _PrintPiece(char ch) {
     }
 }
 
+void _PrintPossibleMoves(bool Arr[]) {
+    for (int i = 0; i <= 7; i++) {
+        for (int j = 0; j <= 7; j++)
+            cout << Arr[i * 8 + j] << " ";
+        cout << endl;
+    }
+}
 
 /*
                                     1
@@ -338,7 +256,10 @@ int TimeRemainingBlack() {    // Returns TIME_TOTAL - TimePassed() + incremented
     return TIME_TOTAL - TimePassed() + (TIME_INCREMENT * MOVES_MADE_BLACK);
 }
 
-bool isCheck(); // Returns whether its check or not.
+int GameState() {   // Returns (0, Ongoing); (1, White in Check); (2, White in Stalemate); (3, White Lost);
+    //              // Returns (4, Draw);    (5, Black in Check); (6, Black in Stalemate); (7, Black Lost);
+    return 0;
+}
 
 string mvShort_HR(short mv) {   // Convert short to Human Readable Long Algebraic Notation
     short  PR;
@@ -359,14 +280,14 @@ string mvShort_HR(short mv) {   // Convert short to Human Readable Long Algebrai
         case 4: PP = "Q";break;
         case 5: PP = " ";break;
     }
-    if (isCheck()) CHK = "+";
+    if (GameState() % 2 == 1) CHK = "+";    // If Game State is odd
     return IC + IR + XS + FC + FR + "=" + PP + CHK;
 }
 
 short mvHR_Short(string mv) {  // Convert Human Readable Long Algebraic Notation to short
     int PR = 0;
     switch (mv[6]) {
-        case ' ': PR = 0; break;
+        case '.': PR = 0; break;
         case 'R': PR = 1; break;
         case 'N': PR = 2; break;
         case 'B': PR = 3; break;
@@ -375,13 +296,392 @@ short mvHR_Short(string mv) {  // Convert Human Readable Long Algebraic Notation
     return (mv[0] - 65) * 8192 + (mv[1] - 48) * 1024 + (mv[3] - 65) * 128 + (mv[4] - 48) * 16 + PR * 2 + ((mv[2] == 'x') ? 1 : 0);
 }
 
-short* AllPossibleMoves(short Piece);  // Returns an Arr of all possible moves of Piece with first index as len(Arr).
+// short mvInput_Short(string mv) {    // Convert User Input command to short
+//     while (mv.length() < 7)
+//         mv += " ";
+//     return mvHR_Short();
+// }
+
+bool* AllPossibleMoves(short Piece) {   // Returns a 8x8 boolean array with 1 meaning it can go there and 0 means can't.
+    int Col = (Piece >> 13 & 0b111), Row = (Piece >> 10 & 0b111);
+    char Pc = CHESS_ARR[Row][Col];
+    static bool PossibleMoves[64];
+    for (int i = 0;i < 64; i++) PossibleMoves[i] = 0;
+    switch (Pc) {
+        case 'r':
+            for (int i = Row - 1; i >= 0; i--) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'A' && CHESS_ARR[i][Col] <= 'Z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Row + 1; i <= 7; i++) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'A' && CHESS_ARR[i][Col] <= 'Z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col - 1; i >= 0; i--) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'A' && CHESS_ARR[Row][i] <= 'Z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col + 1; i <= 7; i++) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'A' && CHESS_ARR[Row][i] <= 'Z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'n':
+            if (Row + 2 <= 7 && Col + 1 <= 7 && ((CHESS_ARR[Row + 2][Col + 1] >= 'A' && CHESS_ARR[Row + 2][Col + 1] <= 'Z') || CHESS_ARR[Row + 2][Col + 1] == '.'))
+                PossibleMoves[(Row + 2) * 8 + Col + 1] = true;
+            if (Row + 2 <= 7 && Col - 1 >= 0 && ((CHESS_ARR[Row + 2][Col - 1] >= 'A' && CHESS_ARR[Row + 2][Col - 1] <= 'Z') || CHESS_ARR[Row + 2][Col - 1] == '.'))
+                PossibleMoves[(Row + 2) * 8 + Col - 1] = true;
+            if (Row + 1 <= 7 && Col + 2 <= 7 && ((CHESS_ARR[Row + 1][Col + 2] >= 'A' && CHESS_ARR[Row + 1][Col + 2] <= 'Z') || CHESS_ARR[Row + 1][Col + 2] == '.'))
+                PossibleMoves[(Row + 1) * 8 + Col + 2] = true;
+            if (Row + 1 <= 7 && Col - 2 >= 0 && ((CHESS_ARR[Row + 1][Col - 2] >= 'A' && CHESS_ARR[Row + 1][Col - 2] <= 'Z') || CHESS_ARR[Row + 1][Col - 2] == '.'))
+                PossibleMoves[(Row + 1) * 8 + Col - 2] = true;
+            if (Row - 2 >= 0 && Col + 1 <= 7 && ((CHESS_ARR[Row - 2][Col + 1] >= 'A' && CHESS_ARR[Row - 2][Col + 1] <= 'Z') || CHESS_ARR[Row - 2][Col + 1] == '.'))
+                PossibleMoves[(Row - 2) * 8 + Col + 1] = true;
+            if (Row - 1 >= 0 && Col + 2 <= 7 && ((CHESS_ARR[Row - 1][Col + 2] >= 'A' && CHESS_ARR[Row - 1][Col + 2] <= 'Z') || CHESS_ARR[Row - 1][Col + 2] == '.'))
+                PossibleMoves[(Row - 1) * 8 + Col + 2] = true;
+            if (Row - 2 >= 0 && Col - 1 >= 0 && ((CHESS_ARR[Row - 2][Col - 1] >= 'A' && CHESS_ARR[Row - 2][Col - 1] <= 'Z') || CHESS_ARR[Row - 2][Col - 1] == '.'))
+                PossibleMoves[(Row - 2) * 8 + Col - 1] = true;
+            if (Row - 1 >= 0 && Col - 2 >= 0 && ((CHESS_ARR[Row - 1][Col - 2] >= 'A' && CHESS_ARR[Row - 1][Col - 2] <= 'Z') || CHESS_ARR[Row - 1][Col - 2] == '.'))
+                PossibleMoves[(Row - 1) * 8 + Col - 2] = true;
+            break;
+
+        case 'b':
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col - i < 0) break;
+                else if (CHESS_ARR[Row - i][Col - i] == '.') PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row - i][Col - i] >= 'A' && CHESS_ARR[Row - i][Col - i] <= 'Z') {
+                    PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col - i < 0) break;
+                else if (CHESS_ARR[Row + i][Col - i] == '.') PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row + i][Col - i] >= 'A' && CHESS_ARR[Row + i][Col - i] <= 'Z') {
+                    PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col + i >7) break;
+                else if (CHESS_ARR[Row - i][Col + i] == '.') PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row - i][Col + i] >= 'A' && CHESS_ARR[Row - i][Col + i] <= 'Z') {
+                    PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col + i > 7) break;
+                else if (CHESS_ARR[Row + i][Col + i] == '.') PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row + i][Col + i] >= 'A' && CHESS_ARR[Row + i][Col + i] <= 'Z') {
+                    PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'q':
+            for (int i = Row - 1; i >= 0; i--) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'A' && CHESS_ARR[i][Col] <= 'Z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Row + 1; i <= 7; i++) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'A' && CHESS_ARR[i][Col] <= 'Z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col - 1; i >= 0; i--) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'A' && CHESS_ARR[Row][i] <= 'Z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col + 1; i <= 7; i++) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'A' && CHESS_ARR[Row][i] <= 'Z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col - i < 0) break;
+                else if (CHESS_ARR[Row - i][Col - i] == '.') PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row - i][Col - i] >= 'A' && CHESS_ARR[Row - i][Col - i] <= 'Z') {
+                    PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col - i < 0) break;
+                else if (CHESS_ARR[Row + i][Col - i] == '.') PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row + i][Col - i] >= 'A' && CHESS_ARR[Row + i][Col - i] <= 'Z') {
+                    PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col + i >7) break;
+                else if (CHESS_ARR[Row - i][Col + i] == '.') PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row - i][Col + i] >= 'A' && CHESS_ARR[Row - i][Col + i] <= 'Z') {
+                    PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col + i > 7) break;
+                else if (CHESS_ARR[Row + i][Col + i] == '.') PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row + i][Col + i] >= 'A' && CHESS_ARR[Row + i][Col + i] <= 'Z') {
+                    PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'k':
+            for (int i = Row - 1; i <= Row + 1; i++)
+                for (int j = Col - 1; j <= Col + 1; j++)
+                    PossibleMoves[i * 8 + j] = true;
+            PossibleMoves[Row * 8 + Col] = false;
+            break;
+
+        case 'p':
+            // Special case for unmoved pawns
+            if (Row == 6 && CHESS_ARR[5][Col] == '.' && CHESS_ARR[4][Col] == '.') PossibleMoves[4 * 8 + Col] = true;
+            if (CHESS_ARR[Row + 1][Col] == '.') PossibleMoves[(Row + 1) * 8 + Col] = true;
+            if (CHESS_ARR[Row + 1][Col - 1] >= 'A' && CHESS_ARR[Row + 1][Col - 1] <= 'Z')
+                PossibleMoves[(Row + 1) * 8 + Col - 1] = true;
+            if (CHESS_ARR[Row + 1][Col + 1] >= 'A' && CHESS_ARR[Row + 1][Col + 1] <= 'Z')
+                PossibleMoves[(Row + 1) * 8 + Col + 1] = true;
+            break;
+
+
+            //Black
+        case 'R':
+            for (int i = Row - 1; i >= 0; i--) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'a' && CHESS_ARR[i][Col] <= 'z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Row + 1; i <= 7; i++) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'a' && CHESS_ARR[i][Col] <= 'z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col - 1; i >= 0; i--) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'a' && CHESS_ARR[Row][i] <= 'z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col + 1; i <= 7; i++) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'a' && CHESS_ARR[Row][i] <= 'z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'N':
+            if (Row + 2 <= 7 && Col + 1 <= 7 && ((CHESS_ARR[Row + 2][Col + 1] >= 'a' && CHESS_ARR[Row + 2][Col + 1] <= 'z') || CHESS_ARR[Row + 2][Col + 1] == '.'))
+                PossibleMoves[(Row + 2) * 8 + Col + 1] = true;
+            if (Row + 2 <= 7 && Col - 1 >= 0 && ((CHESS_ARR[Row + 2][Col - 1] >= 'a' && CHESS_ARR[Row + 2][Col - 1] <= 'z') || CHESS_ARR[Row + 2][Col - 1] == '.'))
+                PossibleMoves[(Row + 2) * 8 + Col - 1] = true;
+            if (Row + 1 <= 7 && Col + 2 <= 7 && ((CHESS_ARR[Row + 1][Col + 2] >= 'a' && CHESS_ARR[Row + 1][Col + 2] <= 'z') || CHESS_ARR[Row + 1][Col + 2] == '.'))
+                PossibleMoves[(Row + 1) * 8 + Col + 2] = true;
+            if (Row + 1 <= 7 && Col - 2 >= 0 && ((CHESS_ARR[Row + 1][Col - 2] >= 'a' && CHESS_ARR[Row + 1][Col - 2] <= 'z') || CHESS_ARR[Row + 1][Col - 2] == '.'))
+                PossibleMoves[(Row + 1) * 8 + Col - 2] = true;
+            if (Row - 2 >= 0 && Col + 1 <= 7 && ((CHESS_ARR[Row - 2][Col + 1] >= 'a' && CHESS_ARR[Row - 2][Col + 1] <= 'z') || CHESS_ARR[Row - 2][Col + 1] == '.'))
+                PossibleMoves[(Row - 2) * 8 + Col + 1] = true;
+            if (Row - 1 >= 0 && Col + 2 <= 7 && ((CHESS_ARR[Row - 1][Col + 2] >= 'a' && CHESS_ARR[Row - 1][Col + 2] <= 'z') || CHESS_ARR[Row - 1][Col + 2] == '.'))
+                PossibleMoves[(Row - 1) * 8 + Col + 2] = true;
+            if (Row - 2 >= 0 && Col - 1 >= 0 && ((CHESS_ARR[Row - 2][Col - 1] >= 'a' && CHESS_ARR[Row - 2][Col - 1] <= 'z') || CHESS_ARR[Row - 2][Col - 1] == '.'))
+                PossibleMoves[(Row - 2) * 8 + Col - 1] = true;
+            if (Row - 1 >= 0 && Col - 2 >= 0 && ((CHESS_ARR[Row - 1][Col - 2] >= 'a' && CHESS_ARR[Row - 1][Col - 2] <= 'z') || CHESS_ARR[Row - 1][Col - 2] == '.'))
+                PossibleMoves[(Row - 1) * 8 + Col - 2] = true;
+            break;
+
+        case 'B':
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col - i < 0) break;
+                else if (CHESS_ARR[Row - i][Col - i] == '.') PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row - i][Col - i] >= 'a' && CHESS_ARR[Row - i][Col - i] <= 'z') {
+                    PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col - i < 0) break;
+                else if (CHESS_ARR[Row + i][Col - i] == '.') PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row + i][Col - i] >= 'a' && CHESS_ARR[Row + i][Col - i] <= 'z') {
+                    PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col + i >7) break;
+                else if (CHESS_ARR[Row - i][Col + i] == '.') PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row - i][Col + i] >= 'a' && CHESS_ARR[Row - i][Col + i] <= 'z') {
+                    PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col + i > 7) break;
+                else if (CHESS_ARR[Row + i][Col + i] == '.') PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row + i][Col + i] >= 'a' && CHESS_ARR[Row + i][Col + i] <= 'z') {
+                    PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'Q':
+            for (int i = Row - 1; i >= 0; i--) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'a' && CHESS_ARR[i][Col] <= 'z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Row + 1; i <= 7; i++) {
+                if (CHESS_ARR[i][Col] == '.') PossibleMoves[i * 8 + Col] = true;
+                else if (CHESS_ARR[i][Col] >= 'a' && CHESS_ARR[i][Col] <= 'z') {
+                    PossibleMoves[i * 8 + Col] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col - 1; i >= 0; i--) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'a' && CHESS_ARR[Row][i] <= 'z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = Col + 1; i <= 7; i++) {
+                if (CHESS_ARR[Row][i] == '.') PossibleMoves[Row * 8 + i] = true;
+                else if (CHESS_ARR[Row][i] >= 'a' && CHESS_ARR[Row][i] <= 'z') {
+                    PossibleMoves[Row * 8 + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col - i < 0) break;
+                else if (CHESS_ARR[Row - i][Col - i] == '.') PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row - i][Col - i] >= 'a' && CHESS_ARR[Row - i][Col - i] <= 'z') {
+                    PossibleMoves[(Row - i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col - i < 0) break;
+                else if (CHESS_ARR[Row + i][Col - i] == '.') PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                else if (CHESS_ARR[Row + i][Col - i] >= 'a' && CHESS_ARR[Row + i][Col - i] <= 'z') {
+                    PossibleMoves[(Row + i) * 8 + Col - i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row - i < 0 || Col + i >7) break;
+                else if (CHESS_ARR[Row - i][Col + i] == '.') PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row - i][Col + i] >= 'a' && CHESS_ARR[Row - i][Col + i] <= 'z') {
+                    PossibleMoves[(Row - i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            for (int i = 1; i <= 7; i++) {
+                if (Row + i > 7 || Col + i > 7) break;
+                else if (CHESS_ARR[Row + i][Col + i] == '.') PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                else if (CHESS_ARR[Row + i][Col + i] >= 'a' && CHESS_ARR[Row + i][Col + i] <= 'z') {
+                    PossibleMoves[(Row + i) * 8 + Col + i] = true;
+                    break;
+                }
+                else break;
+            }
+            break;
+
+        case 'K':
+            for (int i = Row - 1; i <= Row + 1; i++)
+                for (int j = Col - 1; j <= Col + 1; j++)
+                    if ((CHESS_ARR[i][j] >= 'a' && CHESS_ARR[i][j] <= 'z') || CHESS_ARR[i][j] == '.') PossibleMoves[i * 8 + j] = true;
+            break;
+
+        case 'P':
+            // Special case for unmoved pawns
+            if (Row == 1 && CHESS_ARR[2][Col] == '.' && CHESS_ARR[3][Col] == '.') PossibleMoves[3 * 8 + Col] = true;
+            if (CHESS_ARR[Row + 1][Col] == '.') PossibleMoves[(Row + 1) * 8 + Col] = true;
+            if (CHESS_ARR[Row + 1][Col - 1] >= 'a' && CHESS_ARR[Row + 1][Col - 1] <= 'z')
+                PossibleMoves[(Row + 1) * 8 + Col - 1] = true;
+            if (CHESS_ARR[Row + 1][Col + 1] >= 'a' && CHESS_ARR[Row + 1][Col + 1] <= 'z')
+                PossibleMoves[(Row + 1) * 8 + Col + 1] = true;
+            break;
+    }
+    bool* ptr;
+    ptr = &PossibleMoves[0];
+    return ptr;
+}
 
 bool isValidMove(short Move); // Returns whether Move is valid.
 
-void MakeMove(short Move);  // Make a Move if it is Valid
+void MakeMove(short Move) {  // Make a Move if it is Valid
 
-int GameState();    // Returns (0, Ongoing); (1, White Won); (2, Black Won); (3, Draw)
+}
+
 
 void SetCustom256Color(int ID) {
     cout << "\033[38;5;" << ID << "m";
@@ -394,9 +694,15 @@ void SetCustomRGBColor(int R, int G, int B) {
 int main() {
     // Loading();
     // Menu();
-    // _Menu();
-    // LoadGame("chess.txt");
+    _Menu();
+    LoadGame("chess.txt");
     // PrintGame();
+    _PrintPossibleMoves(AllPossibleMoves(0b1101100000000000));
+    // string Move;
+    // while (GameState() == 0) {  // If Game is on-going
+    //     cin >> Move;
+    //     MakeMove(mvHR_Short(Move));
+    // }
     // SaveGame("chess2.txt");
     return 0;
 }
