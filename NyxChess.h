@@ -10,7 +10,7 @@
 //
 //
 //          Nyx-Chess
-// A project by: THE CULT OF THE LINUX
+// A project by: Ismail Hamza
 // Authors: IsmailHamza & AwaisTahir
 //
 // 
@@ -77,6 +77,7 @@ string SQ_BG_MV_PRE;
 string SQ_BG_MV_NXT;
 string SQ_BG_WHITE;
 string SQ_BG_BLACK;
+string SQ_BG_YELLOW;
 string SQ_BG_CUR;
 string SQ_FG_MV_PRE;
 string SQ_FG_MV_NXT;
@@ -110,3 +111,5 @@ char BL_DN;
 char BL_RT;
 char BL_LF;
 char BL_SELECT;
+
+bool* AllPossibleMoves(short);

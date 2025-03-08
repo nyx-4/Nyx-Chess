@@ -10,7 +10,7 @@
   
   
         Nyx-Chess
-A project by: THE CULT OF THE LINUX
+A project by: Ismail Hamza
 Authors: IsmailHamza & AwaisTahir
 
  
